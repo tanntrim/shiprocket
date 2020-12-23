@@ -55,7 +55,8 @@ class ShipRocketOrder():
         'order_items',
         'merchant_order_id',
         'sub_total',
-        'charges'
+        'charges',
+        'courier_name',
     ]
 
     unique_keys_traversed = []
@@ -125,6 +126,9 @@ class ShipRocketOrder():
         return r.json()
     
     def get_order_details(self):
+        '''
+            Get order details of a particular order, updates object variables as well.
+        '''
         if not self.token:
             raise ValueError("token not set")
         if not self.order_id:
@@ -142,7 +146,36 @@ class ShipRocketOrder():
             self.set_attributes(data)
         return data
     
+    def get_manifest(self):
+        '''
+            Get manifest for this order
+        '''
+        if not self.token:
+            raise ValueError("token not set")
+        if not self.order_id:
+            raise ValueError("order_id not set")
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer %s' % self.token
+        }
+        payload = {
+            "shipment_id": [str(self.shipment_id)]
+        }
+        r = requests.post(
+            GENERATE_MANIFEST,
+            headers=headers,
+            data=json.dumps(payload)
+        )
+        data = r.json()
+        pprint(data)
+        # if 'label_created' in data and data['label_created']:
+        #     self.set_attributes(data)
+        return data
+    
     def get_shipping_label(self):
+        '''
+            Get shipping label for this order
+        '''
         if not self.token:
             raise ValueError("token not set")
         if not self.order_id:
@@ -165,10 +198,15 @@ class ShipRocketOrder():
         return data
     
     def assign_awb(self):
+        '''
+            Assign an AWB to this order
+        '''
         if not self.token:
             raise ValueError("token not set")
         if not self.order_id:
             raise ValueError("order_id not set")
+        if self.awb_code:
+            raise ValueError("AWB code is already assigned")
         headers={
             'Content-Type': 'application/json',
             'Authorization': 'Bearer %s' % self.token
@@ -187,6 +225,9 @@ class ShipRocketOrder():
         return data
     
     def place_order(self):
+        '''
+            Place order on shiprocket
+        '''
         mandatory_fields = [
             "payment_method",
             "merchant_order_id",
@@ -197,6 +238,7 @@ class ShipRocketOrder():
             "billing_last_name",
             "billing_email",
             "billing_address",
+            "billing_city",
             "billing_state",
             "billing_country",
             "billing_phone",
@@ -258,11 +300,93 @@ class ShipRocketOrder():
         data = r.json()
         if 'shipment_id' in data and 'order_id' in data:
             self.set_attributes(data)
-            self.assign_awb()
-            self.get_shipping_label()
+        return data
+    
+
+    def place_order_one_step(self):
+        '''
+            Places an order on shiprocket, ship it, assign AWB, create label, and manifest in one step
+        '''
+        mandatory_fields = [
+            "payment_method",
+            "merchant_order_id",
+            "order_date",
+            "sub_total",
+            "shipping_is_billing",
+            "billing_customer_name",
+            "billing_last_name",
+            "billing_email",
+            "billing_address",
+            "billing_city",
+            "billing_state",
+            "billing_country",
+            "billing_phone",
+            "billing_pincode",
+            "length",
+            "breadth",
+            "height",
+            "weight",
+            "order_items"
+        ]
+        order_items_mandatory_fields = [
+            "name",
+            "sku",
+            "units",
+            "selling_price",
+            "discount",
+            "tax",
+            "hsn",
+        ]
+        if not self.token:
+            raise ValueError("token not set")
+        if self.order_id:
+            raise ValueError("order_id shouldn't be set")
+        if self.awb_code:
+            raise ValueError("awb_code shouldn't be set")
+        if self.shipment_id:
+            raise ValueError("shipment_id shouldn't be set")
+        payload = {}
+        for field in mandatory_fields:
+            if not getattr(self, field):
+                raise ValueError("%s shouldn't be empty" % field)
+            else:
+                payload[field] = getattr(self, field)
+        
+        if isinstance(self.order_items, list):
+            pass
+        else:
+            raise ValueError("order_items should be a list")
+        
+        for item in self.order_items:
+            if isinstance(item, dict):
+                pass
+            else:
+                raise ValueError("order_item should be a dictionary")
+            for key in order_items_mandatory_fields:
+                if key not in item:
+                    raise ValueError("%s key missing in order item" % key)
+
+        payload['order_id'] = payload['merchant_order_id']
+        headers={
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer %s' % self.token
+        }
+        r = requests.post(
+            ONE_STEP_CREATE_ORDER,
+            headers=headers,
+            data=json.dumps(payload)
+        )
+        data = r.json()
+        if 'shipment_id' in data and 'order_id' in data:
+            self.set_attributes(data)
+            # self.assign_awb()
+            # self.get_shipping_label()
         return data
 
     def cancel_order(self):
+        '''
+            Cancel an order
+        '''
         if not self.token:
             raise ValueError("token not set")
         if not self.order_id:
@@ -283,6 +407,9 @@ class ShipRocketOrder():
         return data
     
     def delivered(self):
+        '''
+            Check delivery status of an order
+        '''
         if self.shipment_status and self.shipment_status == 7:
             return True
         elif not self.shipment_status:
@@ -295,6 +422,9 @@ class ShipRocketOrder():
             return False
     
     def rto(self):
+        '''
+            Check RTO status of an order
+        '''
         if self.shipment_status and (self.shipment_status == 9 or self.shipment_status == 10 or self.shipment_status == 14):
             return True
         elif not self.shipment_status:
@@ -308,6 +438,9 @@ class ShipRocketOrder():
 
     
     def get_estimated_delievery_date(self):
+        '''
+            Get estimated delivery date for an order
+        '''
         if self.edd:
             return self.edd
         else:
@@ -316,6 +449,9 @@ class ShipRocketOrder():
                 return data['tracking_data']['edd']
     
     def get_last_tracking_update(self):
+        '''
+            Get last tracking update
+        '''
         data = self.track_shipment()
         if 'tracking_data' in data and 'shipment_track_activities' in data['tracking_data'] and isinstance(data['tracking_data']['shipment_track_activities'], list) and len(data['tracking_data']['shipment_track_activities']) > 0:
             return data['tracking_data']['shipment_track_activities'][0]
@@ -323,6 +459,9 @@ class ShipRocketOrder():
             return []
     
     def get_billing_data(self):
+        '''
+            Get billing data
+        '''
         if self.charges:
             return self.charges
         else:
