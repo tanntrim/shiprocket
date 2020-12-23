@@ -292,6 +292,18 @@ class ShipRocketOrder():
                 return False
         else:
             return False
+    
+    def rto(self):
+        if self.shipment_status and (self.shipment_status == 9 or self.shipment_status == 10 or self.shipment_status == 14):
+            return True
+        elif not self.shipment_status:
+            data = self.track_shipment()
+            if 'tracking_data' in data and 'shipment_status' in data['tracking_data'] and (data['tracking_data']['shipment_status'] == 9 or data['tracking_data']['shipment_status'] == 10 or data['tracking_data']['shipment_status'] == 14):
+                return True
+            else:
+                return False
+        else:
+            return False
 
     
     def get_estimated_delievery_date(self):
