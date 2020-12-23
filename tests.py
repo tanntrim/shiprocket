@@ -4,13 +4,14 @@ from lib import *
 token = get_token(email="", password="")
 
 # Initialize with order id or token
-s = ShipRocketOrder(order_id=78615350, token=token['token'])
-# s = ShipRocketOrder(awb_code='781740111039', token=token['token'])
-# s.track_shipment()
-# s.get_order_details()
+# s = ShipRocketOrder(order_id=78615350, token=token['token'])
+s = ShipRocketOrder(awb_code='788830567028', token=token['token'])
+s.track_shipment()
+print(s.get_last_tracking_update())
+# print(s.delivered())
 # s.assign_awb()
 # s.get_shipping_label()
-s.cancel_order()
+# s.cancel_order()
 # s = ShipRocketOrder(
 #         token=token['token'],
 #         payment_method='cod',

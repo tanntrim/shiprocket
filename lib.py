@@ -24,6 +24,8 @@ def get_token(email=None, password=None):
 
 class ShipRocketOrder():
     KEYS = [
+        'edd',
+        'shipment_status',
         'shipment_id',
         'order_id',
         'awb_code',
@@ -104,9 +106,9 @@ class ShipRocketOrder():
             'Content-Type': 'application/json',
             'Authorization': 'Bearer %s' % self.token
         }
-        if self.order_id:
+        if self.shipment_id:
             r = requests.get(
-                SHIPMENT_ID_TRACKING_URL % self.order_id,
+                SHIPMENT_ID_TRACKING_URL % self.shipment_id,
                 headers=headers
             )
         elif self.awb_code:
@@ -115,7 +117,7 @@ class ShipRocketOrder():
                 headers=headers
             )
         else:
-            raise ValueError("Please initialise with order_id or awb_code to track the order")
+            raise ValueError("Please initialise with shipment_id or awb_code to track the order")
         data = r.json()
         if 'tracking_data' in data:
             self.set_attributes(data)
@@ -278,3 +280,31 @@ class ShipRocketOrder():
         )
         data = r.json()
         return data
+    
+    def delivered(self):
+        if self.shipment_status and self.shipment_status == 7:
+            return True
+        elif not self.shipment_status:
+            data = self.track_shipment()
+            if 'tracking_data' in data and 'shipment_status' in data['tracking_data'] and data['tracking_data']['shipment_status'] == 7:
+                return True
+            else:
+                return False
+        else:
+            return False
+
+    
+    def get_estimated_delievery_date(self):
+        if self.edd:
+            return self.edd
+        else:
+            data = self.track_shipment()
+            if 'tracking_data' in data and 'edd' in data['tracking_data']:
+                return data['tracking_data']['edd']
+    
+    def get_last_tracking_update(self):
+        data = self.track_shipment()
+        if 'tracking_data' in data and 'shipment_track_activities' in data['tracking_data'] and isinstance(data['tracking_data']['shipment_track_activities'], list) and len(data['tracking_data']['shipment_track_activities']) > 0:
+            return data['tracking_data']['shipment_track_activities'][0]
+        else:
+            return []
