@@ -1,0 +1,8 @@
+AUTH_URL = "https://apiv2.shiprocket.in/v1/external/auth/login"
+AWB_TRACKING_URL = "https://apiv2.shiprocket.in/v1/external/courier/track/awb/%s"
+SHIPMENT_ID_TRACKING_URL = "https://apiv2.shiprocket.in/v1/external/courier/track/shipment/%s"
+SINGLE_ORDER_DETAILS = "https://apiv2.shiprocket.in/v1/external/orders/show/%s"
+GENERATE_SHIPPING_LABEL = "https://apiv2.shiprocket.in/v1/external/courier/generate/label"
+GENERATE_AWB_URL = "https://apiv2.shiprocket.in/v1/external/courier/assign/awb"
+CREATE_ORDER_URL = "https://apiv2.shiprocket.in/v1/external/orders/create/adhoc"
+CANCEL_ORDER_URL = "https://apiv2.shiprocket.in/v1/external/orders/cancel"
