@@ -54,7 +54,8 @@ class ShipRocketOrder():
         'label_url',
         'order_items',
         'merchant_order_id',
-        'sub_total'
+        'sub_total',
+        'charges'
     ]
 
     unique_keys_traversed = []
@@ -320,3 +321,13 @@ class ShipRocketOrder():
             return data['tracking_data']['shipment_track_activities'][0]
         else:
             return []
+    
+    def get_billing_data(self):
+        if self.charges:
+            return self.charges
+        else:
+            data = self.get_order_details()
+            if 'data' in data and 'awb_data' in data['data'] and 'charges' in data['data']['awb_data']:
+                return data['data']['awb_data']['charges']
+            else:
+                return {}
