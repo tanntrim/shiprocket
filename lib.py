@@ -204,7 +204,7 @@ class ShipRocketOrder():
             "weight",
             "order_items"
         ]
-        order_items_mandatory_field = [
+        order_items_mandatory_fields = [
             "name",
             "sku",
             "units",
@@ -234,7 +234,11 @@ class ShipRocketOrder():
             raise ValueError("order_items should be a list")
         
         for item in self.order_items:
-            for key in order_items_mandatory_field:
+            if isinstance(item, dict):
+                pass
+            else:
+                raise ValueError("order_item should be a dictionary")
+            for key in order_items_mandatory_fields:
                 if key not in item:
                     raise ValueError("%s key missing in order item" % key)
 
